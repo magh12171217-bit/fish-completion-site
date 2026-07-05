@@ -1,0 +1,2537 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>鱼类收集完成度</title>
+  <style>
+    :root {
+      --bg: #fff4f9;
+      --bg2: #ffe8f2;
+      --ink: #5c3350;
+      --muted: #9a6c86;
+      --card: rgba(255,255,255,.82);
+      --line: rgba(92,51,80,.12);
+      --accent: #ef74ab;
+      --accent2: #ffb4cb;
+      --done: #e65d95;
+      --shadow: 0 24px 80px rgba(190, 109, 145, .16);
+      --radius: 24px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 0%, rgba(255,175,211,.52), transparent 35%),
+        radial-gradient(circle at 92% 8%, rgba(255,220,234,.74), transparent 32%),
+        radial-gradient(circle at 80% 88%, rgba(255,188,214,.42), transparent 28%),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+      min-height: 100vh;
+    }
+    .shell { width: min(1280px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 60px; }
+    header.hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(255,255,255,.88), rgba(255,255,255,.54));
+      border: 1px solid rgba(255,255,255,.7);
+      box-shadow: var(--shadow);
+      border-radius: 34px;
+      padding: 32px;
+    }
+    .hero:before {
+      content: "";
+      position: absolute;
+      inset: auto -90px -160px auto;
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(239,116,171,.20), transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero:after {
+      content: "";
+      position: absolute;
+      inset: 14px 22px auto auto;
+      width: 160px;
+      height: 80px;
+      background: radial-gradient(circle at 22% 28%, rgba(255,255,255,.95) 0 10px, transparent 11px),
+                  radial-gradient(circle at 42% 56%, rgba(255,255,255,.75) 0 6px, transparent 7px),
+                  radial-gradient(circle at 68% 22%, rgba(255,255,255,.6) 0 8px, transparent 9px),
+                  radial-gradient(circle at 88% 64%, rgba(255,255,255,.82) 0 5px, transparent 6px);
+      opacity: .9;
+      pointer-events: none;
+    }
+    .kicker { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent); background: rgba(239,116,171,.1); padding: 8px 12px; border-radius: 999px; }
+    h1 { font-size: clamp(34px, 5vw, 68px); line-height: 1; letter-spacing: -0.06em; margin: 18px 0 12px; }
+    .subtitle { max-width: 760px; color: var(--muted); font-size: 16px; line-height: 1.8; margin: 0; }
+    .stats { display: grid; grid-template-columns: 1.3fr repeat(3, .7fr); gap: 14px; margin-top: 24px; }
+    .stat { background: rgba(255,255,255,.72); border: 1px solid var(--line); border-radius: 22px; padding: 18px; min-height: 94px; }
+    .stat b { display:block; font-size: 28px; line-height: 1.05; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .progress-wrap { margin-top: 12px; height: 14px; background: rgba(239,116,171,.14); border-radius: 999px; overflow:hidden; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: inherit; transition: width .35s ease; }
+
+    .toolbar { margin: 18px 0; display: grid; grid-template-columns: 1.2fr .7fr .7fr .7fr; gap: 12px; }
+    .panel { background: var(--card); border: 1px solid rgba(255,255,255,.75); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(190, 109, 145, .10); backdrop-filter: blur(14px); }
+    input, select, button, textarea { font: inherit; }
+    .control { width: 100%; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.82); padding: 14px 15px; color: var(--ink); outline: none; }
+    .control:focus { border-color: rgba(239,116,171,.48); box-shadow: 0 0 0 4px rgba(239,116,171,.12); }
+    .actions { display:flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 18px; }
+    .action { border: 1px solid var(--line); background: rgba(255,255,255,.74); color: var(--ink); border-radius: 999px; padding: 10px 14px; cursor: pointer; transition: transform .18s ease, background .18s ease; }
+    .action:hover { transform: translateY(-1px); background: #fff; }
+    .action.primary { background: var(--accent); color: white; border-color: transparent; }
+    .action.warn { background: rgba(255,255,255,.7); color: #9b4a0c; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+    aside { position: sticky; top: 16px; padding: 18px; }
+    .side-title { font-weight: 800; margin-bottom: 10px; }
+    .mini-list { display: grid; gap: 8px; }
+    .mini-row { display:flex; justify-content: space-between; gap: 10px; align-items:center; padding: 9px 10px; border-radius: 14px; background: rgba(255,255,255,.55); color: var(--muted); font-size: 13px; }
+    .mini-row strong { color: var(--ink); }
+    main { min-width: 0; }
+    .group { margin-bottom: 18px; overflow:hidden; }
+    .group-head { display:flex; align-items:center; justify-content: space-between; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .group-head h2 { margin: 0; font-size: 20px; letter-spacing: -.03em; }
+    .group-head .meta { color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .fish-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; padding: 16px; }
+    .fish {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.76);
+      border-radius: 20px;
+      padding: 12px;
+      min-height: 304px;
+      text-align: left;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 10px;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .fish:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(190,109,145,.14); }
+    .fish.done { background: linear-gradient(135deg, rgba(230,93,149,.14), rgba(255,255,255,.82)); border-color: rgba(230,93,149,.34); }
+    .fish.done:after { content: "已吃"; position:absolute; top:12px; right:12px; color: white; background: var(--done); font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 999px; box-shadow: 0 8px 18px rgba(230,93,149,.22); z-index: 3; }
+    .fish.has-meal-photo:before { content: ""; position:absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,231,242,.38)); pointer-events:none; }
+    .fish-click { display: grid; grid-template-rows: 120px auto; gap: 10px; cursor: pointer; border-radius: 16px; outline: none; position: relative; z-index: 1; }
+    .fish-click:focus-visible { box-shadow: 0 0 0 4px rgba(239,116,171,.18); }
+    .fish-thumb {
+      width: 100%;
+      height: 120px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.68);
+      background: linear-gradient(135deg, rgba(255,244,249,.95), rgba(255,230,240,.88));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+      position: relative;
+    }
+    .fish-thumb img { width: 100%; height: 100%; object-fit: cover; display:block; }
+    .meal-badge { position:absolute; left: 10px; bottom: 10px; color: #fff; background: rgba(230,93,149,.92); font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 999px; box-shadow: 0 8px 20px rgba(147,55,95,.18); }
+    .fish-main { display:grid; gap: 6px; align-content: start; }
+    .fish-name { font-weight: 900; font-size: 16px; padding-right: 48px; }
+    .sci { font-style: italic; color: var(--muted); font-size: 12px; line-height: 1.3; }
+    .fish-en { color: #7d5470; font-size: 13px; }
+    .tags { display:flex; flex-wrap: wrap; gap: 5px; }
+    .tag { font-size: 11px; color: #7b4861; background: rgba(239,116,171,.1); padding: 3px 7px; border-radius: 999px; }
+    .note-mini { color: var(--muted); font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .photo-row { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 2px; }
+    .photo-btn { border: 1px solid rgba(239,116,171,.25); background: rgba(255,255,255,.8); color: #9d4f78; border-radius: 999px; padding: 9px 11px; cursor: pointer; font-weight: 700; font-size: 12px; min-height: 38px; }
+    .photo-btn:hover { background: #fff; transform: translateY(-1px); }
+    .photo-btn.ghost { color: #8a6477; background: rgba(255,255,255,.52); }
+    .photo-hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .empty { padding: 40px; text-align:center; color: var(--muted); }
+    details.panel { padding: 16px 18px; margin: 18px 0; }
+    details summary { cursor: pointer; font-weight: 800; }
+    .form-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+    .form-grid .wide { grid-column: span 3; }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.7; margin-top: 10px; }
+    .hidden-file { display:none; }
+    footer { color: var(--muted); font-size: 12px; line-height: 1.7; margin-top: 22px; padding: 0 4px; }
+    @media (max-width: 900px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 18px, 1280px); padding-top: 10px; }
+      header.hero { padding: 22px; border-radius: 26px; }
+      .stats, .toolbar, .form-grid { grid-template-columns: 1fr; }
+      .form-grid .wide { grid-column: span 1; }
+      .fish-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 18px, 1280px); padding: 12px 0 40px; }
+      .hero:after { display: none; }
+      .toolbar { grid-template-columns: 1fr; gap: 10px; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .action { width: 100%; min-height: 44px; }
+      .layout { gap: 12px; }
+      .fish-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); padding: 12px; }
+      .fish { min-height: 292px; padding: 10px; }
+      .fish-click { grid-template-rows: 112px auto; }
+      .fish-thumb { height: 112px; }
+      .photo-btn { min-height: 42px; }
+    }
+    @media (max-width: 420px) {
+      h1 { letter-spacing: -0.04em; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat { padding: 14px; min-height: 82px; }
+      .stat b { font-size: 24px; }
+      .actions { grid-template-columns: 1fr; }
+      .fish-grid { grid-template-columns: 1fr; }
+      .fish { min-height: 0; }
+      .fish-click { grid-template-rows: 46vw auto; }
+      .fish-thumb { height: 46vw; min-height: 150px; max-height: 220px; }
+      .photo-row { gap: 7px; }
+      .photo-btn { flex: 1 1 auto; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="kicker">🐟 FishDex · 吃鱼收集册</div>
+      <h1>鱼类收集完成度</h1>
+      <p class="subtitle">把吃过的鱼一条条点亮。现在每张鱼卡都会优先尝试加载真实鱼类照片；吃过的鱼还能上传自己的“吃鱼照片”，像给鱼册贴上一张小小战利品，当前内置常见食用鱼类 <b id="seedCount">0</b> 种，可按淡水/海水/洄游/软骨鱼分类，也可按“目”和“科”重新分组。你的进度和吃鱼照片会保存在本机浏览器里。</p>
+      <div class="stats">
+        <div class="stat">
+          <span>总完成度</span>
+          <b id="percent">0%</b>
+          <div class="progress-wrap"><div class="progress-bar" id="bar"></div></div>
+        </div>
+        <div class="stat"><span>已吃过</span><b id="doneCount">0</b></div>
+        <div class="stat"><span>总鱼类</span><b id="totalCount">0</b></div>
+        <div class="stat"><span>当前筛选</span><b id="shownCount">0</b></div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <input id="search" class="control" placeholder="搜索中文名 / 英文名 / 学名 / 科目，比如：鲷、tuna、鲤科" />
+      <select id="habitat" class="control"><option value="">全部水域分类</option></select>
+      <select id="groupBy" class="control">
+        <option value="habitat">按水域分类</option>
+        <option value="order">按目分类</option>
+        <option value="family">按科分类</option>
+        <option value="status">按完成状态</option>
+      </select>
+      <select id="status" class="control">
+        <option value="">全部状态</option>
+        <option value="done">只看已吃</option>
+        <option value="todo">只看未吃</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="action primary" id="exportProgress">导出进度</button>
+      <button class="action" id="exportProgressImage">导出进度图片</button>
+      <button class="action" id="importProgressBtn">导入进度</button>
+      <button class="action" id="importCsvBtn">导入鱼类 CSV</button>
+      <button class="action" id="downloadCsv">下载 CSV 模板</button>
+      <button class="action warn" id="resetProgress">清空进度</button>
+      <input class="hidden-file" id="progressFile" type="file" accept="application/json,.json" />
+      <input class="hidden-file" id="csvFile" type="file" accept=".csv,text/csv" />
+      <input class="hidden-file" id="mealPhotoFile" type="file" accept="image/*" />
+    </div>
+
+    <details class="panel">
+      <summary>添加一条自定义鱼</summary>
+      <div class="form-grid">
+        <input class="control" id="newName" placeholder="中文名，如：刺鲳" />
+        <input class="control" id="newEn" placeholder="英文名，可空" />
+        <input class="control" id="newSci" placeholder="学名，可空" />
+        <input class="control" id="newHabitat" placeholder="水域分类，如：海水鱼" />
+        <input class="control" id="newOrder" placeholder="目，如：鲈形目" />
+        <input class="control" id="newFamily" placeholder="科，如：刺鲳科" />
+        <textarea class="control wide" id="newNote" placeholder="备注，可空"></textarea>
+      </div>
+      <button class="action primary" id="addFish" style="margin-top:12px">加入鱼册</button>
+      <div class="note">CSV 导入列名：name,en,sci,habitat,order,family,note。导入后会和手动添加的鱼一起保存在本机浏览器。</div>
+    </details>
+
+    <div class="layout">
+      <aside class="panel">
+        <div class="side-title">分类完成度</div>
+        <div id="sideStats" class="mini-list"></div>
+      </aside>
+      <main id="groups"></main>
+    </div>
+
+    <footer>
+      数据说明：此版本是“常见食用鱼类打卡器”的可运行底座，鱼卡会优先加载维基百科/维基共享资源可访问到的真实鱼类照片；你上传的吃鱼照片只保存在当前浏览器/手机本地，不会上传到服务器。若暂时没有可用图片，则使用站内生成的粉嫩插画占位图，不声称已经穷尽全世界所有可食用鱼类。不同国家/地区对可食用、保护、禁捕、毒性处理、养殖合法性有差异，尤其是河豚、鲨鳐、部分洄游鱼类，请以当地法规和正规来源为准。
+    </footer>
+  </div>
+
+  <script>
+    const SEED_FISH = [
+  {
+    "name": "鲤鱼",
+    "en": "Common carp",
+    "sci": "Cyprinus carpio",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "中国常见家常鱼，红烧、糖醋都很常见。",
+    "id": "cyprinus-carpio"
+  },
+  {
+    "name": "草鱼",
+    "en": "Grass carp",
+    "sci": "Ctenopharyngodon idella",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "四大家鱼之一，适合水煮、酸菜、鱼片。",
+    "id": "ctenopharyngodon-idella"
+  },
+  {
+    "name": "青鱼",
+    "en": "Black carp",
+    "sci": "Mylopharyngodon piceus",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "四大家鱼之一，肉质厚实。",
+    "id": "mylopharyngodon-piceus"
+  },
+  {
+    "name": "鲢鱼",
+    "en": "Silver carp",
+    "sci": "Hypophthalmichthys molitrix",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "四大家鱼之一，常用于鱼头、鱼丸。",
+    "id": "hypophthalmichthys-molitrix"
+  },
+  {
+    "name": "鳙鱼 / 花鲢",
+    "en": "Bighead carp",
+    "sci": "Hypophthalmichthys nobilis",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "鱼头常见，剁椒鱼头常用。",
+    "id": "hypophthalmichthys-nobilis"
+  },
+  {
+    "name": "鲫鱼",
+    "en": "Crucian carp",
+    "sci": "Carassius auratus",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "常用于鲫鱼汤。",
+    "id": "carassius-auratus"
+  },
+  {
+    "name": "银鲫",
+    "en": "Prussian carp",
+    "sci": "Carassius gibelio",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "常见淡水食用鱼。",
+    "id": "carassius-gibelio"
+  },
+  {
+    "name": "鲮鱼",
+    "en": "Mud carp",
+    "sci": "Cirrhinus molitorella",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "常见于广东，豆豉鲮鱼罐头名物。",
+    "id": "cirrhinus-molitorella"
+  },
+  {
+    "name": "团头鲂 / 武昌鱼",
+    "en": "Wuchang bream",
+    "sci": "Megalobrama amblycephala",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "清蒸名气很高。",
+    "id": "megalobrama-amblycephala"
+  },
+  {
+    "name": "鳊鱼",
+    "en": "White bream",
+    "sci": "Parabramis pekinensis",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "肉质细嫩，江河湖泊常见。",
+    "id": "parabramis-pekinensis"
+  },
+  {
+    "name": "翘嘴鲌",
+    "en": "Topmouth culter",
+    "sci": "Culter alburnus",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "江湖钓鱼圈常见，肉味鲜。",
+    "id": "culter-alburnus"
+  },
+  {
+    "name": "餐条 / 白条鱼",
+    "en": "Sharpbelly",
+    "sci": "Hemiculter leucisculus",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "小型淡水鱼，常油炸。",
+    "id": "hemiculter-leucisculus"
+  },
+  {
+    "name": "麦穗鱼",
+    "en": "Topmouth gudgeon",
+    "sci": "Pseudorasbora parva",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鲤科",
+    "note": "小鱼类，常见于乡土水域。",
+    "id": "pseudorasbora-parva"
+  },
+  {
+    "name": "泥鳅",
+    "en": "Oriental weatherfish",
+    "sci": "Misgurnus anguillicaudatus",
+    "habitat": "淡水鱼",
+    "order": "鲤形目",
+    "family": "鳅科",
+    "note": "炖汤、红烧都常见。",
+    "id": "misgurnus-anguillicaudatus"
+  },
+  {
+    "name": "黄鳝",
+    "en": "Asian swamp eel",
+    "sci": "Monopterus albus",
+    "habitat": "淡水鱼",
+    "order": "合鳃鱼目",
+    "family": "合鳃鱼科",
+    "note": "鳝丝、鳝段常用。",
+    "id": "monopterus-albus"
+  },
+  {
+    "name": "乌鳢 / 黑鱼",
+    "en": "Northern snakehead",
+    "sci": "Channa argus",
+    "habitat": "淡水鱼",
+    "order": "攀鲈目",
+    "family": "鳢科",
+    "note": "鱼片、酸菜鱼常见。",
+    "id": "channa-argus"
+  },
+  {
+    "name": "月鳢",
+    "en": "Chinese snakehead",
+    "sci": "Channa asiatica",
+    "habitat": "淡水鱼",
+    "order": "攀鲈目",
+    "family": "鳢科",
+    "note": "华南常见鳢类。",
+    "id": "channa-asiatica"
+  },
+  {
+    "name": "鳜鱼 / 桂鱼",
+    "en": "Mandarin fish",
+    "sci": "Siniperca chuatsi",
+    "habitat": "淡水鱼",
+    "order": "鲈形目",
+    "family": "鳜科",
+    "note": "松鼠鳜鱼经典。",
+    "id": "siniperca-chuatsi"
+  },
+  {
+    "name": "大眼鳜",
+    "en": "Big-eye mandarin fish",
+    "sci": "Siniperca knerii",
+    "habitat": "淡水鱼",
+    "order": "鲈形目",
+    "family": "鳜科",
+    "note": "鳜鱼类食用鱼。",
+    "id": "siniperca-knerii"
+  },
+  {
+    "name": "鲈鱼 / 加州鲈",
+    "en": "Largemouth bass",
+    "sci": "Micropterus salmoides",
+    "habitat": "淡水鱼",
+    "order": "太阳鱼目",
+    "family": "太阳鱼科",
+    "note": "国内养殖常见，清蒸常用。",
+    "id": "micropterus-salmoides"
+  },
+  {
+    "name": "蓝鳃太阳鱼",
+    "en": "Bluegill",
+    "sci": "Lepomis macrochirus",
+    "habitat": "淡水鱼",
+    "order": "太阳鱼目",
+    "family": "太阳鱼科",
+    "note": "北美常见小型食用鱼。",
+    "id": "lepomis-macrochirus"
+  },
+  {
+    "name": "尼罗罗非鱼",
+    "en": "Nile tilapia",
+    "sci": "Oreochromis niloticus",
+    "habitat": "淡水鱼",
+    "order": "慈鲷目",
+    "family": "慈鲷科",
+    "note": "全球重要养殖鱼。",
+    "id": "oreochromis-niloticus"
+  },
+  {
+    "name": "莫桑比克罗非鱼",
+    "en": "Mozambique tilapia",
+    "sci": "Oreochromis mossambicus",
+    "habitat": "淡水鱼",
+    "order": "慈鲷目",
+    "family": "慈鲷科",
+    "note": "罗非鱼类常见种。",
+    "id": "oreochromis-mossambicus"
+  },
+  {
+    "name": "鲶鱼",
+    "en": "Amur catfish",
+    "sci": "Silurus asotus",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "鲶科",
+    "note": "肉质软嫩。",
+    "id": "silurus-asotus"
+  },
+  {
+    "name": "南方大口鲶",
+    "en": "Southern catfish",
+    "sci": "Silurus meridionalis",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "鲶科",
+    "note": "常见养殖鲶类。",
+    "id": "silurus-meridionalis"
+  },
+  {
+    "name": "胡子鲶 / 塘鲺",
+    "en": "Hong Kong catfish",
+    "sci": "Clarias fuscus",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "胡子鲶科",
+    "note": "华南常见。",
+    "id": "clarias-fuscus"
+  },
+  {
+    "name": "斑点叉尾鮰",
+    "en": "Channel catfish",
+    "sci": "Ictalurus punctatus",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "鮰科",
+    "note": "北美原产，养殖广。",
+    "id": "ictalurus-punctatus"
+  },
+  {
+    "name": "黄颡鱼 / 黄辣丁",
+    "en": "Yellowhead catfish",
+    "sci": "Tachysurus fulvidraco",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "鲿科",
+    "note": "小锅炖、火锅都常见。",
+    "id": "tachysurus-fulvidraco"
+  },
+  {
+    "name": "长吻鮠 / 江团",
+    "en": "Longsnout catfish",
+    "sci": "Leiocassis longirostris",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "鲿科",
+    "note": "长江流域名鱼之一。",
+    "id": "leiocassis-longirostris"
+  },
+  {
+    "name": "巴沙鱼",
+    "en": "Basa catfish",
+    "sci": "Pangasius bocourti",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "巨鲶科",
+    "note": "超市鱼片常见。",
+    "id": "pangasius-bocourti"
+  },
+  {
+    "name": "越南鲶 / 龙利鱼片常见替代",
+    "en": "Striped catfish",
+    "sci": "Pangasianodon hypophthalmus",
+    "habitat": "淡水鱼",
+    "order": "鲶形目",
+    "family": "巨鲶科",
+    "note": "常加工为冷冻鱼片。",
+    "id": "pangasianodon-hypophthalmus"
+  },
+  {
+    "name": "银鱼",
+    "en": "Icefish",
+    "sci": "Salangichthys microdon",
+    "habitat": "淡水鱼",
+    "order": "胡瓜鱼目",
+    "family": "银鱼科",
+    "note": "可做银鱼炒蛋、银鱼汤。",
+    "id": "salangichthys-microdon"
+  },
+  {
+    "name": "太湖大银鱼",
+    "en": "Large icefish",
+    "sci": "Protosalanx hyalocranius",
+    "habitat": "淡水鱼",
+    "order": "胡瓜鱼目",
+    "family": "银鱼科",
+    "note": "湖鲜代表。",
+    "id": "protosalanx-hyalocranius"
+  },
+  {
+    "name": "虹鳟",
+    "en": "Rainbow trout",
+    "sci": "Oncorhynchus mykiss",
+    "habitat": "淡水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "冷水养殖常见。",
+    "id": "oncorhynchus-mykiss"
+  },
+  {
+    "name": "溪红点鲑",
+    "en": "Brook trout",
+    "sci": "Salvelinus fontinalis",
+    "habitat": "淡水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "冷水鱼，常见于北美。",
+    "id": "salvelinus-fontinalis"
+  },
+  {
+    "name": "湖鳟",
+    "en": "Lake trout",
+    "sci": "Salvelinus namaycush",
+    "habitat": "淡水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "大型冷水鱼。",
+    "id": "salvelinus-namaycush"
+  },
+  {
+    "name": "香鱼",
+    "en": "Ayu sweetfish",
+    "sci": "Plecoglossus altivelis",
+    "habitat": "洄游/半咸水鱼",
+    "order": "胡瓜鱼目",
+    "family": "香鱼科",
+    "note": "日料常见，有独特香气。",
+    "id": "plecoglossus-altivelis"
+  },
+  {
+    "name": "欧亚鲈",
+    "en": "European perch",
+    "sci": "Perca fluviatilis",
+    "habitat": "淡水鱼",
+    "order": "鲈形目",
+    "family": "鲈科",
+    "note": "欧洲常见食用淡水鱼。",
+    "id": "perca-fluviatilis"
+  },
+  {
+    "name": "梭鲈",
+    "en": "Zander",
+    "sci": "Sander lucioperca",
+    "habitat": "淡水鱼",
+    "order": "鲈形目",
+    "family": "鲈科",
+    "note": "欧洲重要食用鱼。",
+    "id": "sander-lucioperca"
+  },
+  {
+    "name": "白斑狗鱼",
+    "en": "Northern pike",
+    "sci": "Esox lucius",
+    "habitat": "淡水鱼",
+    "order": "狗鱼目",
+    "family": "狗鱼科",
+    "note": "北方冷水捕食鱼。",
+    "id": "esox-lucius"
+  },
+  {
+    "name": "美洲白鲟",
+    "en": "White sturgeon",
+    "sci": "Acipenser transmontanus",
+    "habitat": "淡水鱼",
+    "order": "鲟形目",
+    "family": "鲟科",
+    "note": "以合法养殖来源为宜。",
+    "id": "acipenser-transmontanus"
+  },
+  {
+    "name": "西伯利亚鲟",
+    "en": "Siberian sturgeon",
+    "sci": "Acipenser baerii",
+    "habitat": "淡水鱼",
+    "order": "鲟形目",
+    "family": "鲟科",
+    "note": "常见养殖鲟鱼。",
+    "id": "acipenser-baerii"
+  },
+  {
+    "name": "匙吻鲟",
+    "en": "American paddlefish",
+    "sci": "Polyodon spathula",
+    "habitat": "淡水鱼",
+    "order": "鲟形目",
+    "family": "匙吻鲟科",
+    "note": "合法养殖时可食用。",
+    "id": "polyodon-spathula"
+  },
+  {
+    "name": "短盖巨脂鲤 / 淡水白鲳",
+    "en": "Pacu",
+    "sci": "Piaractus brachypomus",
+    "habitat": "淡水鱼",
+    "order": "脂鲤目",
+    "family": "脂鲤科",
+    "note": "南美原产，部分地区养殖。",
+    "id": "piaractus-brachypomus"
+  },
+  {
+    "name": "斑点雀鳝",
+    "en": "Spotted gar",
+    "sci": "Lepisosteus oculatus",
+    "habitat": "淡水鱼",
+    "order": "雀鳝目",
+    "family": "雀鳝科",
+    "note": "部分地区作为食用鱼，卵不可食。",
+    "id": "lepisosteus-oculatus"
+  },
+  {
+    "name": "淡水鳕 / 江鳕",
+    "en": "Burbot",
+    "sci": "Lota lota",
+    "habitat": "淡水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "少数淡水鳕形目鱼。",
+    "id": "lota-lota"
+  },
+  {
+    "name": "日本鳗鲡",
+    "en": "Japanese eel",
+    "sci": "Anguilla japonica",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鳗鲡目",
+    "family": "鳗鲡科",
+    "note": "鳗鱼饭常用，注意合法养殖与资源保护。",
+    "id": "anguilla-japonica"
+  },
+  {
+    "name": "欧洲鳗鲡",
+    "en": "European eel",
+    "sci": "Anguilla anguilla",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鳗鲡目",
+    "family": "鳗鲡科",
+    "note": "传统欧洲食用鱼，资源压力大。",
+    "id": "anguilla-anguilla"
+  },
+  {
+    "name": "美洲鳗鲡",
+    "en": "American eel",
+    "sci": "Anguilla rostrata",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鳗鲡目",
+    "family": "鳗鲡科",
+    "note": "北美常见鳗类。",
+    "id": "anguilla-rostrata"
+  },
+  {
+    "name": "大西洋鲑",
+    "en": "Atlantic salmon",
+    "sci": "Salmo salar",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "三文鱼常见来源之一。",
+    "id": "salmo-salar"
+  },
+  {
+    "name": "帝王鲑",
+    "en": "Chinook salmon",
+    "sci": "Oncorhynchus tshawytscha",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "大型太平洋鲑。",
+    "id": "oncorhynchus-tshawytscha"
+  },
+  {
+    "name": "银鲑",
+    "en": "Coho salmon",
+    "sci": "Oncorhynchus kisutch",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "市场常见三文鱼类。",
+    "id": "oncorhynchus-kisutch"
+  },
+  {
+    "name": "红鲑",
+    "en": "Sockeye salmon",
+    "sci": "Oncorhynchus nerka",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "肉色鲜红。",
+    "id": "oncorhynchus-nerka"
+  },
+  {
+    "name": "狗鲑 / 大马哈鱼",
+    "en": "Chum salmon",
+    "sci": "Oncorhynchus keta",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "太平洋鲑之一。",
+    "id": "oncorhynchus-keta"
+  },
+  {
+    "name": "粉鲑",
+    "en": "Pink salmon",
+    "sci": "Oncorhynchus gorbuscha",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "罐头与加工品常见。",
+    "id": "oncorhynchus-gorbuscha"
+  },
+  {
+    "name": "樱鳟 / 马苏鲑",
+    "en": "Masu salmon",
+    "sci": "Oncorhynchus masou",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲑形目",
+    "family": "鲑科",
+    "note": "东亚常见鲑类。",
+    "id": "oncorhynchus-masou"
+  },
+  {
+    "name": "美洲西鲱 / 西鲱",
+    "en": "American shad",
+    "sci": "Alosa sapidissima",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲱形目",
+    "family": "鲱科",
+    "note": "北美洄游食用鱼。",
+    "id": "alosa-sapidissima"
+  },
+  {
+    "name": "鲥鱼 / 希尔莎鲥",
+    "en": "Hilsa shad",
+    "sci": "Tenualosa ilisha",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲱形目",
+    "family": "鲱科",
+    "note": "南亚名鱼。",
+    "id": "tenualosa-ilisha"
+  },
+  {
+    "name": "遮目鱼 / 虱目鱼",
+    "en": "Milkfish",
+    "sci": "Chanos chanos",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鼠鱚目",
+    "family": "遮目鱼科",
+    "note": "台湾、东南亚常见。",
+    "id": "chanos-chanos"
+  },
+  {
+    "name": "鲻鱼 / 乌鱼",
+    "en": "Flathead grey mullet",
+    "sci": "Mugil cephalus",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲻形目",
+    "family": "鲻科",
+    "note": "可取乌鱼子。",
+    "id": "mugil-cephalus"
+  },
+  {
+    "name": "金目鲈 / 盲曹",
+    "en": "Barramundi",
+    "sci": "Lates calcarifer",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲈形目",
+    "family": "尖吻鲈科",
+    "note": "东南亚、澳洲常见。",
+    "id": "lates-calcarifer"
+  },
+  {
+    "name": "条纹鲈",
+    "en": "Striped bass",
+    "sci": "Morone saxatilis",
+    "habitat": "洄游/半咸水鱼",
+    "order": "鲈形目",
+    "family": "鲈科",
+    "note": "北美重要游钓与食用鱼。",
+    "id": "morone-saxatilis"
+  },
+  {
+    "name": "大西洋鳕",
+    "en": "Atlantic cod",
+    "sci": "Gadus morhua",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "炸鱼薯条经典用鱼之一。",
+    "id": "gadus-morhua"
+  },
+  {
+    "name": "太平洋鳕",
+    "en": "Pacific cod",
+    "sci": "Gadus macrocephalus",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "冷冻鳕鱼常见来源。",
+    "id": "gadus-macrocephalus"
+  },
+  {
+    "name": "阿拉斯加狭鳕",
+    "en": "Alaska pollock",
+    "sci": "Gadus chalcogrammus",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "鱼柳、蟹棒原料常见。",
+    "id": "gadus-chalcogrammus"
+  },
+  {
+    "name": "黑线鳕",
+    "en": "Haddock",
+    "sci": "Melanogrammus aeglefinus",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "北大西洋常见白肉鱼。",
+    "id": "melanogrammus-aeglefinus"
+  },
+  {
+    "name": "青鳕 / 煤鳕",
+    "en": "Saithe",
+    "sci": "Pollachius virens",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "欧洲市场常见。",
+    "id": "pollachius-virens"
+  },
+  {
+    "name": "蓝鳕",
+    "en": "Blue whiting",
+    "sci": "Micromesistius poutassou",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "加工鱼制品常见原料。",
+    "id": "micromesistius-poutassou"
+  },
+  {
+    "name": "欧洲无须鳕",
+    "en": "European hake",
+    "sci": "Merluccius merluccius",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "无须鳕科",
+    "note": "欧洲常见白肉鱼。",
+    "id": "merluccius-merluccius"
+  },
+  {
+    "name": "长身鳕 / 玲鳕",
+    "en": "Ling",
+    "sci": "Molva molva",
+    "habitat": "海水鱼",
+    "order": "鳕形目",
+    "family": "鳕科",
+    "note": "北大西洋食用鱼。",
+    "id": "molva-molva"
+  },
+  {
+    "name": "银鳕鱼 / 裸盖鱼",
+    "en": "Sablefish",
+    "sci": "Anoplopoma fimbria",
+    "habitat": "海水鱼",
+    "order": "鲉形目",
+    "family": "裸盖鱼科",
+    "note": "油脂丰富，常被称银鳕鱼。",
+    "id": "anoplopoma-fimbria"
+  },
+  {
+    "name": "日本鲭 / 鲐鱼",
+    "en": "Chub mackerel",
+    "sci": "Scomber japonicus",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "烤鲭鱼常见。",
+    "id": "scomber-japonicus"
+  },
+  {
+    "name": "大西洋鲭",
+    "en": "Atlantic mackerel",
+    "sci": "Scomber scombrus",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "欧洲常见青花鱼。",
+    "id": "scomber-scombrus"
+  },
+  {
+    "name": "蓝点马鲛 / 鲅鱼",
+    "en": "Japanese Spanish mackerel",
+    "sci": "Scomberomorus niphonius",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "鲅鱼饺子常用。",
+    "id": "scomberomorus-niphonius"
+  },
+  {
+    "name": "康氏马鲛",
+    "en": "Narrow-barred Spanish mackerel",
+    "sci": "Scomberomorus commerson",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "热带海域常见马鲛。",
+    "id": "scomberomorus-commerson"
+  },
+  {
+    "name": "竹荚鱼",
+    "en": "Japanese horse mackerel",
+    "sci": "Trachurus japonicus",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "日料常见。",
+    "id": "trachurus-japonicus"
+  },
+  {
+    "name": "大西洋竹荚鱼",
+    "en": "Atlantic horse mackerel",
+    "sci": "Trachurus trachurus",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "欧洲常见。",
+    "id": "trachurus-trachurus"
+  },
+  {
+    "name": "圆鲹",
+    "en": "Round scad",
+    "sci": "Decapterus maruadsi",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "沿海常见小型经济鱼。",
+    "id": "decapterus-maruadsi"
+  },
+  {
+    "name": "鲯鳅 / 鬼头刀",
+    "en": "Mahi-mahi",
+    "sci": "Coryphaena hippurus",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲯鳅科",
+    "note": "热带海域常见，颜色绚丽。",
+    "id": "coryphaena-hippurus"
+  },
+  {
+    "name": "军曹鱼 / 海鲡",
+    "en": "Cobia",
+    "sci": "Rachycentron canadum",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "军曹鱼科",
+    "note": "养殖与海钓常见。",
+    "id": "rachycentron-canadum"
+  },
+  {
+    "name": "黄尾鰤",
+    "en": "Japanese amberjack",
+    "sci": "Seriola quinqueradiata",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "日本常见刺身鱼。",
+    "id": "seriola-quinqueradiata"
+  },
+  {
+    "name": "高体鰤",
+    "en": "Greater amberjack",
+    "sci": "Seriola dumerili",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "大型鲹科鱼。",
+    "id": "seriola-dumerili"
+  },
+  {
+    "name": "黄鳍金枪鱼",
+    "en": "Yellowfin tuna",
+    "sci": "Thunnus albacares",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "刺身和罐头都常见。",
+    "id": "thunnus-albacares"
+  },
+  {
+    "name": "大眼金枪鱼",
+    "en": "Bigeye tuna",
+    "sci": "Thunnus obesus",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "刺身市场常见。",
+    "id": "thunnus-obesus"
+  },
+  {
+    "name": "长鳍金枪鱼",
+    "en": "Albacore tuna",
+    "sci": "Thunnus alalunga",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "白肉金枪鱼罐头常用。",
+    "id": "thunnus-alalunga"
+  },
+  {
+    "name": "鲣鱼 / 木鱼",
+    "en": "Skipjack tuna",
+    "sci": "Katsuwonus pelamis",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "木鱼花、罐头常见。",
+    "id": "katsuwonus-pelamis"
+  },
+  {
+    "name": "太平洋蓝鳍金枪鱼",
+    "en": "Pacific bluefin tuna",
+    "sci": "Thunnus orientalis",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "高级刺身常见，需关注可持续来源。",
+    "id": "thunnus-orientalis"
+  },
+  {
+    "name": "大西洋蓝鳍金枪鱼",
+    "en": "Atlantic bluefin tuna",
+    "sci": "Thunnus thynnus",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "高级刺身鱼，需关注资源保护。",
+    "id": "thunnus-thynnus"
+  },
+  {
+    "name": "南方蓝鳍金枪鱼",
+    "en": "Southern bluefin tuna",
+    "sci": "Thunnus maccoyii",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "资源压力较大，宜关注来源。",
+    "id": "thunnus-maccoyii"
+  },
+  {
+    "name": "东方狐鲣",
+    "en": "Striped bonito",
+    "sci": "Sarda orientalis",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲭科",
+    "note": "鲣类食用鱼。",
+    "id": "sarda-orientalis"
+  },
+  {
+    "name": "日本鳀",
+    "en": "Japanese anchovy",
+    "sci": "Engraulis japonicus",
+    "habitat": "海水鱼",
+    "order": "鲱形目",
+    "family": "鳀科",
+    "note": "小鱼干、鱼露常见。",
+    "id": "engraulis-japonicus"
+  },
+  {
+    "name": "欧洲鳀",
+    "en": "European anchovy",
+    "sci": "Engraulis encrasicolus",
+    "habitat": "海水鱼",
+    "order": "鲱形目",
+    "family": "鳀科",
+    "note": "地中海餐桌常见。",
+    "id": "engraulis-encrasicolus"
+  },
+  {
+    "name": "日本沙丁鱼",
+    "en": "Japanese pilchard",
+    "sci": "Sardinops melanostictus",
+    "habitat": "海水鱼",
+    "order": "鲱形目",
+    "family": "鲱科",
+    "note": "罐头、烤鱼常见。",
+    "id": "sardinops-melanostictus"
+  },
+  {
+    "name": "欧洲沙丁鱼",
+    "en": "European pilchard",
+    "sci": "Sardina pilchardus",
+    "habitat": "海水鱼",
+    "order": "鲱形目",
+    "family": "鲱科",
+    "note": "地中海常见。",
+    "id": "sardina-pilchardus"
+  },
+  {
+    "name": "太平洋鲱",
+    "en": "Pacific herring",
+    "sci": "Clupea pallasii",
+    "habitat": "海水鱼",
+    "order": "鲱形目",
+    "family": "鲱科",
+    "note": "鱼籽与腌制品常见。",
+    "id": "clupea-pallasii"
+  },
+  {
+    "name": "大西洋鲱",
+    "en": "Atlantic herring",
+    "sci": "Clupea harengus",
+    "habitat": "海水鱼",
+    "order": "鲱形目",
+    "family": "鲱科",
+    "note": "北欧腌鲱鱼经典。",
+    "id": "clupea-harengus"
+  },
+  {
+    "name": "多春鱼 / 毛鳞鱼",
+    "en": "Capelin",
+    "sci": "Mallotus villosus",
+    "habitat": "海水鱼",
+    "order": "胡瓜鱼目",
+    "family": "胡瓜鱼科",
+    "note": "常带鱼籽食用。",
+    "id": "mallotus-villosus"
+  },
+  {
+    "name": "带鱼",
+    "en": "Largehead hairtail",
+    "sci": "Trichiurus lepturus",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "带鱼科",
+    "note": "家常红烧、香煎常见。",
+    "id": "trichiurus-lepturus"
+  },
+  {
+    "name": "小黄鱼",
+    "en": "Small yellow croaker",
+    "sci": "Larimichthys polyactis",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "石首鱼科",
+    "note": "东海常见经济鱼。",
+    "id": "larimichthys-polyactis"
+  },
+  {
+    "name": "大黄鱼",
+    "en": "Large yellow croaker",
+    "sci": "Larimichthys crocea",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "石首鱼科",
+    "note": "中国沿海名鱼。",
+    "id": "larimichthys-crocea"
+  },
+  {
+    "name": "鮸鱼 / 米鱼",
+    "en": "Mi-iuy croaker",
+    "sci": "Miichthys miiuy",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "石首鱼科",
+    "note": "鱼胶、家常菜常见。",
+    "id": "miichthys-miiuy"
+  },
+  {
+    "name": "白姑鱼",
+    "en": "Belanger's croaker",
+    "sci": "Johnius belangerii",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "石首鱼科",
+    "note": "沿海常见石首鱼。",
+    "id": "johnius-belangerii"
+  },
+  {
+    "name": "银鲳",
+    "en": "Silver pomfret",
+    "sci": "Pampus argenteus",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲳科",
+    "note": "清蒸鲳鱼常见。",
+    "id": "pampus-argenteus"
+  },
+  {
+    "name": "中国鲳",
+    "en": "Chinese pomfret",
+    "sci": "Pampus chinensis",
+    "habitat": "海水鱼",
+    "order": "鲭形目",
+    "family": "鲳科",
+    "note": "较大型鲳鱼。",
+    "id": "pampus-chinensis"
+  },
+  {
+    "name": "乌鲳",
+    "en": "Black pomfret",
+    "sci": "Parastromateus niger",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "东南亚与中国沿海常见。",
+    "id": "parastromateus-niger"
+  },
+  {
+    "name": "真鲷 / 加吉鱼",
+    "en": "Red seabream",
+    "sci": "Pagrus major",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鲷科",
+    "note": "日料和宴席常见。",
+    "id": "pagrus-major"
+  },
+  {
+    "name": "黑鲷",
+    "en": "Black seabream",
+    "sci": "Acanthopagrus schlegelii",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鲷科",
+    "note": "沿海常见。",
+    "id": "acanthopagrus-schlegelii"
+  },
+  {
+    "name": "黄鳍鲷",
+    "en": "Yellowfin seabream",
+    "sci": "Acanthopagrus latus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鲷科",
+    "note": "华南沿海常见。",
+    "id": "acanthopagrus-latus"
+  },
+  {
+    "name": "金头鲷",
+    "en": "Gilthead seabream",
+    "sci": "Sparus aurata",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鲷科",
+    "note": "地中海养殖名鱼。",
+    "id": "sparus-aurata"
+  },
+  {
+    "name": "欧洲海鲈",
+    "en": "European seabass",
+    "sci": "Dicentrarchus labrax",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鮨科",
+    "note": "西餐常见。",
+    "id": "dicentrarchus-labrax"
+  },
+  {
+    "name": "花鲈 / 中国海鲈",
+    "en": "Japanese seabass",
+    "sci": "Lateolabrax japonicus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "花鲈科",
+    "note": "清蒸海鲈鱼常见。",
+    "id": "lateolabrax-japonicus"
+  },
+  {
+    "name": "老虎斑",
+    "en": "Brown-marbled grouper",
+    "sci": "Epinephelus fuscoguttatus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鮨科",
+    "note": "常见石斑鱼。",
+    "id": "epinephelus-fuscoguttatus"
+  },
+  {
+    "name": "青斑 / 斜带石斑鱼",
+    "en": "Orange-spotted grouper",
+    "sci": "Epinephelus coioides",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鮨科",
+    "note": "养殖石斑常见。",
+    "id": "epinephelus-coioides"
+  },
+  {
+    "name": "龙趸 / 鞍带石斑鱼",
+    "en": "Giant grouper",
+    "sci": "Epinephelus lanceolatus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鮨科",
+    "note": "大型石斑鱼。",
+    "id": "epinephelus-lanceolatus"
+  },
+  {
+    "name": "东星斑 / 豹纹鳃棘鲈",
+    "en": "Leopard coral grouper",
+    "sci": "Plectropomus leopardus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "鮨科",
+    "note": "宴席高价鱼。",
+    "id": "plectropomus-leopardus"
+  },
+  {
+    "name": "红鳍笛鲷",
+    "en": "Crimson snapper",
+    "sci": "Lutjanus erythropterus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "笛鲷科",
+    "note": "南方海域常见。",
+    "id": "lutjanus-erythropterus"
+  },
+  {
+    "name": "红鲷 / 红笛鲷",
+    "en": "Red snapper",
+    "sci": "Lutjanus campechanus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "笛鲷科",
+    "note": "美洲常见红鲷。",
+    "id": "lutjanus-campechanus"
+  },
+  {
+    "name": "银鳞笛鲷",
+    "en": "Mangrove red snapper",
+    "sci": "Lutjanus argentimaculatus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "笛鲷科",
+    "note": "红树林海域常见。",
+    "id": "lutjanus-argentimaculatus"
+  },
+  {
+    "name": "龙利鱼 / 半滑舌鳎",
+    "en": "Tongue sole",
+    "sci": "Cynoglossus semilaevis",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "舌鳎科",
+    "note": "真正龙利鱼常指舌鳎类。",
+    "id": "cynoglossus-semilaevis"
+  },
+  {
+    "name": "牙鲆 / 比目鱼",
+    "en": "Olive flounder",
+    "sci": "Paralichthys olivaceus",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "牙鲆科",
+    "note": "刺身、清蒸常见。",
+    "id": "paralichthys-olivaceus"
+  },
+  {
+    "name": "大菱鲆 / 多宝鱼",
+    "en": "Turbot",
+    "sci": "Scophthalmus maximus",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "菱鲆科",
+    "note": "宴席清蒸常见。",
+    "id": "scophthalmus-maximus"
+  },
+  {
+    "name": "欧洲鳎",
+    "en": "Dover sole",
+    "sci": "Solea solea",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "鳎科",
+    "note": "西餐经典鱼。",
+    "id": "solea-solea"
+  },
+  {
+    "name": "欧洲鲽",
+    "en": "European plaice",
+    "sci": "Pleuronectes platessa",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "鲽科",
+    "note": "欧洲常见比目鱼。",
+    "id": "pleuronectes-platessa"
+  },
+  {
+    "name": "太平洋大比目鱼",
+    "en": "Pacific halibut",
+    "sci": "Hippoglossus stenolepis",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "鲽科",
+    "note": "大型白肉鱼。",
+    "id": "hippoglossus-stenolepis"
+  },
+  {
+    "name": "大西洋大比目鱼",
+    "en": "Atlantic halibut",
+    "sci": "Hippoglossus hippoglossus",
+    "habitat": "海水鱼",
+    "order": "鲽形目",
+    "family": "鲽科",
+    "note": "北大西洋大型鱼。",
+    "id": "hippoglossus-hippoglossus"
+  },
+  {
+    "name": "康吉鳗 / 星康吉鳗",
+    "en": "Whitespotted conger",
+    "sci": "Conger myriaster",
+    "habitat": "海水鱼",
+    "order": "鳗鲡目",
+    "family": "康吉鳗科",
+    "note": "日料穴子常见。",
+    "id": "conger-myriaster"
+  },
+  {
+    "name": "海鳗",
+    "en": "Daggertooth pike conger",
+    "sci": "Muraenesox cinereus",
+    "habitat": "海水鱼",
+    "order": "鳗鲡目",
+    "family": "海鳗科",
+    "note": "南方沿海常见。",
+    "id": "muraenesox-cinereus"
+  },
+  {
+    "name": "安康鱼",
+    "en": "Yellow goosefish",
+    "sci": "Lophius litulon",
+    "habitat": "海水鱼",
+    "order": "鮟鱇目",
+    "family": "鮟鱇科",
+    "note": "安康鱼肝很有名。",
+    "id": "lophius-litulon"
+  },
+  {
+    "name": "欧洲鮟鱇",
+    "en": "Anglerfish",
+    "sci": "Lophius piscatorius",
+    "habitat": "海水鱼",
+    "order": "鮟鱇目",
+    "family": "鮟鱇科",
+    "note": "欧洲常见。",
+    "id": "lophius-piscatorius"
+  },
+  {
+    "name": "黑鲪",
+    "en": "Korean rockfish",
+    "sci": "Sebastes schlegelii",
+    "habitat": "海水鱼",
+    "order": "鲉形目",
+    "family": "鲉科",
+    "note": "北方沿海常见。",
+    "id": "sebastes-schlegelii"
+  },
+  {
+    "name": "金眼鲷",
+    "en": "Splendid alfonsino",
+    "sci": "Beryx splendens",
+    "habitat": "海水鱼",
+    "order": "金眼鲷目",
+    "family": "金眼鲷科",
+    "note": "深海食用鱼。",
+    "id": "beryx-splendens"
+  },
+  {
+    "name": "日本方头鱼",
+    "en": "Japanese tilefish",
+    "sci": "Branchiostegus japonicus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "方头鱼科",
+    "note": "日料常见。",
+    "id": "branchiostegus-japonicus"
+  },
+  {
+    "name": "大西洋方头鱼",
+    "en": "Golden tilefish",
+    "sci": "Lopholatilus chamaeleonticeps",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "方头鱼科",
+    "note": "美洲常见。",
+    "id": "lopholatilus-chamaeleonticeps"
+  },
+  {
+    "name": "鲂鮄 / 红娘鱼",
+    "en": "Gurnard",
+    "sci": "Chelidonichthys kumu",
+    "habitat": "海水鱼",
+    "order": "鲉形目",
+    "family": "鲂鮄科",
+    "note": "沿海底栖鱼。",
+    "id": "chelidonichthys-kumu"
+  },
+  {
+    "name": "海鲂 / 约翰多利",
+    "en": "John dory",
+    "sci": "Zeus faber",
+    "habitat": "海水鱼",
+    "order": "海鲂目",
+    "family": "海鲂科",
+    "note": "西餐常见。",
+    "id": "zeus-faber"
+  },
+  {
+    "name": "灰三齿鲀 / 养殖河豚",
+    "en": "Tiger puffer",
+    "sci": "Takifugu rubripes",
+    "habitat": "海水鱼",
+    "order": "鲀形目",
+    "family": "鲀科",
+    "note": "必须由合规处理，不可自行处理。",
+    "id": "takifugu-rubripes"
+  },
+  {
+    "name": "绿鳍马面鲀",
+    "en": "Black scraper",
+    "sci": "Thamnaconus modestus",
+    "habitat": "海水鱼",
+    "order": "鲀形目",
+    "family": "单角鲀科",
+    "note": "剥皮鱼常见。",
+    "id": "thamnaconus-modestus"
+  },
+  {
+    "name": "灰鳞鲀",
+    "en": "Grey triggerfish",
+    "sci": "Balistes capriscus",
+    "habitat": "海水鱼",
+    "order": "鲀形目",
+    "family": "鳞鲀科",
+    "note": "部分地区食用。",
+    "id": "balistes-capriscus"
+  },
+  {
+    "name": "黄鳍马面鲀",
+    "en": "Filefish",
+    "sci": "Thamnaconus septentrionalis",
+    "habitat": "海水鱼",
+    "order": "鲀形目",
+    "family": "单角鲀科",
+    "note": "干制、烧烤常见。",
+    "id": "thamnaconus-septentrionalis"
+  },
+  {
+    "name": "剑鱼",
+    "en": "Swordfish",
+    "sci": "Xiphias gladius",
+    "habitat": "海水鱼",
+    "order": "旗鱼目",
+    "family": "剑鱼科",
+    "note": "牛排式煎烤常见。",
+    "id": "xiphias-gladius"
+  },
+  {
+    "name": "平鳍旗鱼",
+    "en": "Sailfish",
+    "sci": "Istiophorus platypterus",
+    "habitat": "海水鱼",
+    "order": "旗鱼目",
+    "family": "旗鱼科",
+    "note": "大型远洋鱼。",
+    "id": "istiophorus-platypterus"
+  },
+  {
+    "name": "鲬鱼",
+    "en": "Flathead",
+    "sci": "Platycephalus indicus",
+    "habitat": "海水鱼",
+    "order": "鲉形目",
+    "family": "鲬科",
+    "note": "沿海底栖食用鱼。",
+    "id": "platycephalus-indicus"
+  },
+  {
+    "name": "蓝圆鲹",
+    "en": "Indian scad",
+    "sci": "Decapterus russelli",
+    "habitat": "海水鱼",
+    "order": "鲹形目",
+    "family": "鲹科",
+    "note": "小型经济鱼。",
+    "id": "decapterus-russelli"
+  },
+  {
+    "name": "金线鱼",
+    "en": "Golden threadfin bream",
+    "sci": "Nemipterus virgatus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "金线鱼科",
+    "note": "鱼丸、煎鱼常见。",
+    "id": "nemipterus-virgatus"
+  },
+  {
+    "name": "四指马鲅",
+    "en": "Fourfinger threadfin",
+    "sci": "Eleutheronema tetradactylum",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "马鲅科",
+    "note": "东南亚常见。",
+    "id": "eleutheronema-tetradactylum"
+  },
+  {
+    "name": "篮子鱼 / 泥猛",
+    "en": "White-spotted rabbitfish",
+    "sci": "Siganus canaliculatus",
+    "habitat": "海水鱼",
+    "order": "鲈形目",
+    "family": "篮子鱼科",
+    "note": "南方沿海常见。",
+    "id": "siganus-canaliculatus"
+  },
+  {
+    "name": "星鲨 / 白斑角鲨",
+    "en": "Spotted dogfish",
+    "sci": "Mustelus manazo",
+    "habitat": "软骨鱼/鳐鲨",
+    "order": "真鲨目",
+    "family": "皱唇鲨科",
+    "note": "部分地区食用，注意资源与重金属风险。",
+    "id": "mustelus-manazo"
+  },
+  {
+    "name": "刺鲨 / 白斑角鲨类",
+    "en": "Spiny dogfish",
+    "sci": "Squalus acanthias",
+    "habitat": "软骨鱼/鳐鲨",
+    "order": "角鲨目",
+    "family": "角鲨科",
+    "note": "欧洲炸鱼店曾常见，宜关注可持续。",
+    "id": "squalus-acanthias"
+  },
+  {
+    "name": "蓝鲨",
+    "en": "Blue shark",
+    "sci": "Prionace glauca",
+    "habitat": "软骨鱼/鳐鲨",
+    "order": "真鲨目",
+    "family": "真鲨科",
+    "note": "鱼翅与鱼肉市场可见，慎选来源。",
+    "id": "prionace-glauca"
+  },
+  {
+    "name": "孔鳐",
+    "en": "Thornback ray",
+    "sci": "Raja clavata",
+    "habitat": "软骨鱼/鳐鲨",
+    "order": "鳐形目",
+    "family": "鳐科",
+    "note": "欧洲常见鳐鱼翅肉。",
+    "id": "raja-clavata"
+  },
+  {
+    "name": "赤魟",
+    "en": "Red stingray",
+    "sci": "Hemitrygon akajei",
+    "habitat": "软骨鱼/鳐鲨",
+    "order": "燕魟目",
+    "family": "魟科",
+    "note": "沿海市场偶见。",
+    "id": "hemitrygon-akajei"
+  },
+  {
+    "name": "电鳐类",
+    "en": "Torpedo ray",
+    "sci": "Torpedo marmorata",
+    "habitat": "软骨鱼/鳐鲨",
+    "order": "电鳐目",
+    "family": "电鳐科",
+    "note": "少数地区食用。",
+    "id": "torpedo-marmorata"
+  }
+];
+    const CSV_TEMPLATE = "name,en,sci,habitat,order,family,note\n例：刺鲳,Butterfish,Psenopsis anomala,海水鱼,鲭形目,刺鲳科,补充导入示例\n";
+    const STORE_KEY = "fishdex_done_v1";
+    const CUSTOM_KEY = "fishdex_custom_v1";
+    const IMG_CACHE_KEY = "fishdex_img_cache_v1";
+    const MEAL_DB_NAME = "fishdex_meal_photos_v1";
+    const MEAL_STORE_NAME = "photos";
+
+    const $ = sel => document.querySelector(sel);
+    const els = {
+      search: $('#search'), habitat: $('#habitat'), groupBy: $('#groupBy'), status: $('#status'), groups: $('#groups'), sideStats: $('#sideStats'),
+      percent: $('#percent'), bar: $('#bar'), doneCount: $('#doneCount'), totalCount: $('#totalCount'), shownCount: $('#shownCount'), seedCount: $('#seedCount'),
+      exportProgress: $('#exportProgress'), exportProgressImage: $('#exportProgressImage'), importProgressBtn: $('#importProgressBtn'), importProgress: $('#progressFile'), importCsvBtn: $('#importCsvBtn'), csvFile: $('#csvFile'),
+      mealPhotoFile: $('#mealPhotoFile'),
+      resetProgress: $('#resetProgress'), addFish: $('#addFish'), downloadCsv: $('#downloadCsv')
+    };
+
+    let done = new Set(JSON.parse(localStorage.getItem(STORE_KEY) || '[]'));
+    let customFish = JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]');
+    let fish = mergeFish();
+    let imageCache = JSON.parse(localStorage.getItem(IMG_CACHE_KEY) || '{}');
+    let pendingThumbs = new Set();
+    let mealPhotoUrls = {};
+    let selectedMealPhotoFishId = "";
+
+    function cleanId(text) {
+      return String(text || 'fish').toLowerCase().normalize('NFKD').replace(/[^a-z0-9一-龥]+/g, '-').replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).slice(2, 7);
+    }
+    function mergeFish() {
+      const map = new Map();
+      [...SEED_FISH, ...customFish].forEach(f => map.set(f.id, f));
+      return Array.from(map.values());
+    }
+    function saveDone() { localStorage.setItem(STORE_KEY, JSON.stringify([...done])); }
+    function saveCustom() { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customFish)); }
+    function unique(arr) { return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hans-CN')); }
+    function esc(str) { return String(str ?? '').replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
+    function hashCode(str) {
+      return [...String(str || 'fish')].reduce((acc, ch) => ((acc << 5) - acc) + ch.charCodeAt(0), 0);
+    }
+    function paletteForHabitat(habitat='') {
+      if (habitat.includes('淡水')) return { a:'#ffd1e6', b:'#ffc0dd', c:'#ff8ebc', d:'#fff6fb' };
+      if (habitat.includes('洄游')) return { a:'#ffe0ea', b:'#ffcbe0', c:'#f48bb6', d:'#fff8fb' };
+      if (habitat.includes('软骨')) return { a:'#f6d7e8', b:'#ebb1cc', c:'#c96e98', d:'#fff8fb' };
+      return { a:'#ffd8ea', b:'#ffc2db', c:'#f07aa8', d:'#fff7fb' };
+    }
+    function svgToDataUri(svg) {
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg).replace(/%0A/g, '').replace(/%20/g, ' ');
+    }
+    function fishThumb(f) {
+      const p = paletteForHabitat(f.habitat || '');
+      const seed = Math.abs(hashCode((f.id || '') + (f.name || '')));
+      const flip = seed % 2 === 0 ? 1 : -1;
+      const bubbleX = 220 + seed % 36;
+      const bubbleY = 34 + seed % 28;
+      const stripe1 = 116 + seed % 18;
+      const stripe2 = 148 + seed % 22;
+      const tailShade = seed % 3 === 0 ? p.c : p.b;
+      const label = esc((f.name || '鱼').slice(0, 6));
+      const habitat = esc(f.habitat || '未分类');
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="${p.a}"/>
+              <stop offset="100%" stop-color="${p.b}"/>
+            </linearGradient>
+            <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="rgba(179,82,127,.18)"/>
+            </filter>
+          </defs>
+          <rect width="320" height="180" rx="24" fill="url(#g)"/>
+          <path d="M18 146c44-20 80-26 126-21 40 4 67 17 126 6 12-2 25 3 31 14v5H18z" fill="rgba(255,255,255,.35)"/>
+          <g opacity=".58">
+            <circle cx="${bubbleX}" cy="${bubbleY}" r="10" fill="rgba(255,255,255,.55)"/>
+            <circle cx="${bubbleX+26}" cy="${bubbleY+18}" r="6" fill="rgba(255,255,255,.5)"/>
+            <circle cx="${bubbleX+44}" cy="${bubbleY-8}" r="4" fill="rgba(255,255,255,.45)"/>
+          </g>
+          <g transform="translate(${flip === 1 ? 0 : 320} 0) scale(${flip} 1)" filter="url(#s)">
+            <ellipse cx="146" cy="92" rx="76" ry="38" fill="${p.d}"/>
+            <path d="M222 92l46-33v66z" fill="${tailShade}"/>
+            <path d="M133 62c17-17 34-20 51-11-16 7-26 18-34 29z" fill="${p.c}" opacity=".95"/>
+            <path d="M136 117c17 17 34 20 51 11-16-7-26-18-34-29z" fill="${p.c}" opacity=".88"/>
+            <ellipse cx="100" cy="92" rx="12" ry="9" fill="${p.b}"/>
+            <circle cx="94" cy="88" r="5" fill="#6d3f56"/>
+            <circle cx="92" cy="86" r="1.8" fill="#fff"/>
+            <path d="M93 104c6 2 15 2 21-1" fill="none" stroke="#9e5f79" stroke-width="3" stroke-linecap="round"/>
+            <path d="M${stripe1} 60c-10 10-12 41-1 64" fill="none" stroke="${p.c}" stroke-width="8" stroke-linecap="round" opacity=".55"/>
+            <path d="M${stripe2} 59c-10 12-12 43-1 66" fill="none" stroke="${p.c}" stroke-width="6" stroke-linecap="round" opacity=".4"/>
+          </g>
+          <text x="18" y="28" font-size="15" font-family="'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" fill="#8b5470" font-weight="700">${habitat}</text>
+          <text x="18" y="160" font-size="24" font-family="'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" fill="#6d3f56" font-weight="800">${label}</text>
+        </svg>`;
+      return svgToDataUri(svg);
+    }
+    function saveImageCache() { localStorage.setItem(IMG_CACHE_KEY, JSON.stringify(imageCache)); }
+    function getImageCandidateNames(f) {
+      const names = [f.sci, f.en, f.name].filter(Boolean).map(x => String(x).trim()).filter(Boolean);
+      return [...new Set(names)];
+    }
+    function pickImageUrlFromPage(data) {
+      if (!data) return '';
+      return data.originalimage?.source || data.thumbnail?.source || '';
+    }
+    async function fetchWikiImage(title) {
+      const url = `https://zh.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+      let res = await fetch(url, { headers: { 'accept': 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        const img = pickImageUrlFromPage(data);
+        if (img) return img;
+      }
+      const enUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+      res = await fetch(enUrl, { headers: { 'accept': 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        const img = pickImageUrlFromPage(data);
+        if (img) return img;
+      }
+      return '';
+    }
+    async function resolveFishImage(f) {
+      if (!f?.id) return '';
+      if (imageCache[f.id] === null) return '';
+      if (imageCache[f.id]) return imageCache[f.id];
+      const candidates = getImageCandidateNames(f);
+      for (const title of candidates) {
+        try {
+          const img = await fetchWikiImage(title);
+          if (img) {
+            imageCache[f.id] = img;
+            saveImageCache();
+            return img;
+          }
+        } catch (err) {}
+      }
+      imageCache[f.id] = null;
+      saveImageCache();
+      return '';
+    }
+    async function hydrateThumbnails() {
+      const imgs = [...document.querySelectorAll('img[data-fish-id]')];
+      for (const img of imgs) {
+        const id = img.dataset.fishId;
+        if (!id || pendingThumbs.has(id)) continue;
+        const item = fish.find(f => f.id === id);
+        if (!item) continue;
+        const cached = imageCache[id];
+        if (cached) {
+          img.src = cached;
+          img.dataset.real = '1';
+          continue;
+        }
+        if (cached === null) continue;
+        pendingThumbs.add(id);
+        resolveFishImage(item).then(url => {
+          if (url) {
+            const node = document.querySelector(`img[data-fish-id="${CSS.escape(id)}"]`);
+            if (node) {
+              node.src = url;
+              node.dataset.real = '1';
+            }
+          }
+        }).finally(() => pendingThumbs.delete(id));
+      }
+    }
+
+    function openMealDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(MEAL_DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(MEAL_STORE_NAME)) db.createObjectStore(MEAL_STORE_NAME, { keyPath: 'id' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function getAllMealPhotos() {
+      const db = await openMealDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEAL_STORE_NAME, 'readonly');
+        const store = tx.objectStore(MEAL_STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const out = {};
+          (req.result || []).forEach(item => { if (item?.id && item?.dataUrl) out[item.id] = item.dataUrl; });
+          resolve(out);
+        };
+        req.onerror = () => reject(req.error);
+        tx.oncomplete = () => db.close();
+      });
+    }
+    async function setMealPhoto(id, dataUrl) {
+      const db = await openMealDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEAL_STORE_NAME, 'readwrite');
+        tx.objectStore(MEAL_STORE_NAME).put({ id, dataUrl, updatedAt: new Date().toISOString() });
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+    async function removeMealPhoto(id) {
+      const db = await openMealDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(MEAL_STORE_NAME, 'readwrite');
+        tx.objectStore(MEAL_STORE_NAME).delete(id);
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+    async function loadMealPhotos() {
+      if (!('indexedDB' in window)) return;
+      try {
+        mealPhotoUrls = await getAllMealPhotos();
+        render();
+      } catch (err) {
+        console.warn('吃鱼照片读取失败', err);
+      }
+    }
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+    function loadImage(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+    async function compressPhoto(file) {
+      const original = await readFileAsDataURL(file);
+      const img = await loadImage(original);
+      const maxSide = 1280;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.84);
+    }
+
+    function initFilters() {
+      els.seedCount.textContent = fish.length;
+      const habitats = unique(fish.map(f => f.habitat));
+      els.habitat.innerHTML = '<option value="">全部水域分类</option>' + habitats.map(h => `<option value="${esc(h)}">${esc(h)}</option>`).join('');
+    }
+
+    function getFiltered() {
+      const q = els.search.value.trim().toLowerCase();
+      const h = els.habitat.value;
+      const s = els.status.value;
+      return fish.filter(f => {
+        const hay = [f.name, f.en, f.sci, f.habitat, f.order, f.family, f.note].join(' ').toLowerCase();
+        if (q && !hay.includes(q)) return false;
+        if (h && f.habitat !== h) return false;
+        if (s === 'done' && !done.has(f.id)) return false;
+        if (s === 'todo' && done.has(f.id)) return false;
+        return true;
+      });
+    }
+
+    function groupLabel(f) {
+      const g = els.groupBy.value;
+      if (g === 'status') return done.has(f.id) ? '已经吃过' : '还没吃过';
+      return f[g] || '未分类';
+    }
+
+    function render() {
+      fish = mergeFish();
+      const filtered = getFiltered();
+      const groups = new Map();
+      filtered.forEach(f => {
+        const label = groupLabel(f);
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label).push(f);
+      });
+
+      const total = fish.length;
+      const doneCount = fish.filter(f => done.has(f.id)).length;
+      const pct = total ? Math.round(doneCount / total * 1000) / 10 : 0;
+      els.percent.textContent = `${pct}%`;
+      els.bar.style.width = `${pct}%`;
+      els.doneCount.textContent = doneCount;
+      els.totalCount.textContent = total;
+      els.shownCount.textContent = filtered.length;
+      els.seedCount.textContent = total;
+
+      renderSideStats();
+
+      if (!filtered.length) {
+        els.groups.innerHTML = '<section class="panel empty">这片水域暂时没有鱼。换个关键词，渔网再撒一次。</section>';
+        return;
+      }
+      const sortedGroups = [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0],'zh-Hans-CN'));
+      els.groups.innerHTML = sortedGroups.map(([label, items]) => {
+        items.sort((a,b)=>a.name.localeCompare(b.name,'zh-Hans-CN'));
+        const eaten = items.filter(f => done.has(f.id)).length;
+        return `<section class="panel group">
+          <div class="group-head"><h2>${esc(label)}</h2><div class="meta">${eaten} / ${items.length} · ${items.length ? Math.round(eaten/items.length*100) : 0}%</div></div>
+          <div class="fish-grid">
+            ${items.map(f => {
+              const hasMealPhoto = Boolean(mealPhotoUrls[f.id]);
+              const isDone = done.has(f.id);
+              const photoSrc = hasMealPhoto ? mealPhotoUrls[f.id] : fishThumb(f);
+              const photoAttrs = hasMealPhoto ? '' : ` data-fish-id="${esc(f.id)}" referrerpolicy="no-referrer"`;
+              return `<article class="fish ${isDone ? 'done' : ''} ${hasMealPhoto ? 'has-meal-photo' : ''}" data-id="${esc(f.id)}" title="${esc(f.note || '')}">
+                <div class="fish-click" role="button" tabindex="0" data-id="${esc(f.id)}" aria-pressed="${isDone ? 'true' : 'false'}">
+                  <div class="fish-thumb"><img src="${photoSrc}"${photoAttrs} alt="${esc(f.name)} ${hasMealPhoto ? '吃鱼照片' : '鱼类图片'}" loading="lazy" />${hasMealPhoto ? '<span class="meal-badge">吃鱼照片</span>' : ''}</div>
+                  <div class="fish-main">
+                    <div class="fish-name">${esc(f.name)}</div>
+                    <div class="fish-en">${esc(f.en || '')}</div>
+                    <div class="sci">${esc(f.sci || '')}</div>
+                    <div class="tags"><span class="tag">${esc(f.habitat || '未分类')}</span><span class="tag">${esc(f.order || '未定目')}</span><span class="tag">${esc(f.family || '未定科')}</span></div>
+                    <div class="note-mini">${esc(f.note || '点击标记是否吃过')}</div>
+                  </div>
+                </div>
+                <div class="photo-row">
+                  ${isDone ? `<button class="photo-btn" type="button" data-upload-photo="${esc(f.id)}">${hasMealPhoto ? '更换吃鱼照片' : '上传吃鱼照片'}</button>` : '<span class="photo-hint">点亮后可上传吃鱼照片</span>'}
+                  ${hasMealPhoto ? `<button class="photo-btn ghost" type="button" data-remove-photo="${esc(f.id)}">删除照片</button>` : ''}
+                </div>
+              </article>`;
+            }).join('')}
+          </div>
+        </section>`;
+      }).join('');
+      hydrateThumbnails();
+    }
+
+    function renderSideStats() {
+      const habitats = unique(fish.map(f => f.habitat || '未分类'));
+      els.sideStats.innerHTML = habitats.map(h => {
+        const list = fish.filter(f => (f.habitat || '未分类') === h);
+        const eaten = list.filter(f => done.has(f.id)).length;
+        const pct = list.length ? Math.round(eaten / list.length * 100) : 0;
+        return `<div class="mini-row"><strong>${esc(h)}</strong><span>${eaten}/${list.length} · ${pct}%</span></div>`;
+      }).join('');
+    }
+
+    function toggleFish(id) {
+      done.has(id) ? done.delete(id) : done.add(id);
+      saveDone();
+      render();
+    }
+
+    function download(filename, text, type='text/plain') {
+      const blob = new Blob([text], {type});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    function downloadBlob(filename, blob) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+    function fillRoundRect(ctx, x, y, w, h, r, fill) {
+      ctx.save();
+      roundRect(ctx, x, y, w, h, r);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.restore();
+    }
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines=2) {
+      const raw = String(text || '');
+      let line = '';
+      let lines = [];
+      for (const ch of raw) {
+        const test = line + ch;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = ch;
+          if (lines.length >= maxLines) break;
+        } else {
+          line = test;
+        }
+      }
+      if (lines.length < maxLines && line) lines.push(line);
+      lines.slice(0, maxLines).forEach((ln, i) => ctx.fillText(ln, x, y + i * lineHeight));
+      return Math.min(lines.length, maxLines) * lineHeight;
+    }
+    function drawImageCover(ctx, img, x, y, w, h, r=22) {
+      const scale = Math.max(w / img.width, h / img.height);
+      const sw = w / scale;
+      const sh = h / scale;
+      const sx = (img.width - sw) / 2;
+      const sy = (img.height - sh) / 2;
+      ctx.save();
+      roundRect(ctx, x, y, w, h, r);
+      ctx.clip();
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+      ctx.restore();
+    }
+    function canvasToBlob(canvas) {
+      return new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+    }
+    function isRemoteHttp(src) {
+      return /^https?:\/\//i.test(String(src || ''));
+    }
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+    async function remoteImageToDataUrl(url) {
+      const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!res.ok) throw new Error('图片请求失败');
+      const blob = await res.blob();
+      if (!String(blob.type || '').startsWith('image/')) throw new Error('不是图片文件');
+      return await blobToDataUrl(blob);
+    }
+    async function imageFromSource(src) {
+      const img = new Image();
+      img.decoding = 'async';
+      if (isRemoteHttp(src)) img.crossOrigin = 'anonymous';
+      img.src = src;
+      await img.decode().catch(() => new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; }));
+      return img;
+    }
+    async function exportImageSourceForFish(f) {
+      if (mealPhotoUrls[f.id]) return { src: mealPhotoUrls[f.id], label: '吃鱼照片' };
+      try {
+        const realUrl = await resolveFishImage(f);
+        if (realUrl) {
+          try {
+            const dataUrl = await remoteImageToDataUrl(realUrl);
+            return { src: dataUrl, label: '鱼类图片' };
+          } catch (err) {
+            return { src: realUrl, label: '鱼类图片' };
+          }
+        }
+      } catch (err) {}
+      return { src: fishThumb(f), label: '' };
+    }
+    function getHabitatStats() {
+      return unique(fish.map(f => f.habitat || '未分类')).map(h => {
+        const list = fish.filter(f => (f.habitat || '未分类') === h);
+        const eaten = list.filter(f => done.has(f.id)).length;
+        return { label: h, eaten, total: list.length, pct: list.length ? Math.round(eaten / list.length * 100) : 0 };
+      });
+    }
+    async function exportProgressImage() {
+      if ('indexedDB' in window) {
+        try { mealPhotoUrls = await getAllMealPhotos(); } catch (err) {}
+      }
+      fish = mergeFish();
+      const eatenFish = fish.filter(f => done.has(f.id)).sort((a,b)=>a.name.localeCompare(b.name,'zh-Hans-CN'));
+      const total = fish.length;
+      const doneCount = eatenFish.length;
+      const pct = total ? Math.round(doneCount / total * 1000) / 10 : 0;
+      const mealCount = eatenFish.filter(f => mealPhotoUrls[f.id]).length;
+      const habitatStats = getHabitatStats();
+
+      const W = 1080;
+      const margin = 64;
+      const gap = 24;
+      const cardW = (W - margin * 2 - gap) / 2;
+      const cardH = 292;
+      const rows = Math.max(1, Math.ceil(eatenFish.length / 2));
+      const statsH = 220;
+      const habitatH = 78 + habitatStats.length * 58;
+      const titleH = 245;
+      const listTitleH = 86;
+      const H = titleH + statsH + habitatH + listTitleH + rows * (cardH + gap) + 80;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#fff4f9');
+      bg.addColorStop(1, '#ffe3f0');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(255,182,213,.55)';
+      ctx.beginPath(); ctx.arc(140, 68, 150, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.72)';
+      ctx.beginPath(); ctx.arc(950, 120, 190, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#5c3350';
+      ctx.font = '900 68px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText('鱼类收集完成度', margin, 108);
+      ctx.font = '700 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#9a6c86';
+      ctx.fillText('FishDex · 吃鱼进度长图', margin, 154);
+      ctx.font = '500 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText(`生成时间：${new Date().toLocaleString('zh-CN')}`, margin, 194);
+
+      let y = titleH;
+      fillRoundRect(ctx, margin, y, W - margin * 2, 168, 34, 'rgba(255,255,255,.78)');
+      ctx.fillStyle = '#ef74ab';
+      ctx.font = '900 74px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText(`${pct}%`, margin + 34, y + 90);
+      ctx.font = '700 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#5c3350';
+      ctx.fillText(`已吃过 ${doneCount} / ${total} 种`, margin + 280, y + 74);
+      ctx.fillStyle = '#9a6c86';
+      ctx.fillText(`已上传吃鱼照片 ${mealCount} 张`, margin + 280, y + 116);
+      const barX = margin + 34, barY = y + 126, barW = W - margin * 2 - 68, barH = 18;
+      fillRoundRect(ctx, barX, barY, barW, barH, 99, 'rgba(239,116,171,.14)');
+      fillRoundRect(ctx, barX, barY, Math.max(8, barW * pct / 100), barH, 99, '#ef74ab');
+      y += statsH;
+
+      fillRoundRect(ctx, margin, y, W - margin * 2, habitatH - 28, 30, 'rgba(255,255,255,.68)');
+      ctx.fillStyle = '#5c3350';
+      ctx.font = '900 32px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText('分类进度', margin + 30, y + 52);
+      let hy = y + 92;
+      habitatStats.forEach(s => {
+        ctx.fillStyle = '#5c3350';
+        ctx.font = '700 23px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(s.label, margin + 30, hy);
+        ctx.fillStyle = '#9a6c86';
+        ctx.font = '600 21px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(`${s.eaten}/${s.total} · ${s.pct}%`, W - margin - 190, hy);
+        fillRoundRect(ctx, margin + 30, hy + 14, W - margin * 2 - 60, 12, 99, 'rgba(239,116,171,.12)');
+        fillRoundRect(ctx, margin + 30, hy + 14, (W - margin * 2 - 60) * s.pct / 100, 12, 99, '#ff9fc3');
+        hy += 58;
+      });
+      y += habitatH;
+
+      ctx.fillStyle = '#5c3350';
+      ctx.font = '900 36px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText(eatenFish.length ? '已吃鱼类图鉴' : '还没有点亮鱼类', margin, y + 40);
+      ctx.font = '500 22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#9a6c86';
+      ctx.fillText(eatenFish.length ? '会优先显示吃鱼照片，其次显示真实鱼类照片。' : '点亮鱼类后，这里会生成你的吃鱼图鉴。', margin, y + 76);
+      y += listTitleH;
+
+      if (!eatenFish.length) {
+        fillRoundRect(ctx, margin, y, W - margin * 2, 220, 32, 'rgba(255,255,255,.76)');
+        ctx.fillStyle = '#9a6c86';
+        ctx.font = '700 30px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText('先去点亮第一条鱼吧。', margin + 38, y + 112);
+      } else {
+        for (let i = 0; i < eatenFish.length; i++) {
+          const f = eatenFish[i];
+          const col = i % 2;
+          const row = Math.floor(i / 2);
+          const x = margin + col * (cardW + gap);
+          const cy = y + row * (cardH + gap);
+          fillRoundRect(ctx, x, cy, cardW, cardH, 28, 'rgba(255,255,255,.80)');
+          const exportImg = await exportImageSourceForFish(f);
+          try {
+            const img = await imageFromSource(exportImg.src);
+            drawImageCover(ctx, img, x + 18, cy + 18, cardW - 36, 150, 22);
+          } catch (err) {
+            try {
+              const fallbackImg = await imageFromSource(fishThumb(f));
+              drawImageCover(ctx, fallbackImg, x + 18, cy + 18, cardW - 36, 150, 22);
+            } catch (fallbackErr) {
+              fillRoundRect(ctx, x + 18, cy + 18, cardW - 36, 150, 22, '#ffe4f1');
+            }
+          }
+          if (exportImg.label) {
+            const labelW = exportImg.label === '吃鱼照片' ? 118 : 112;
+            fillRoundRect(ctx, x + 30, cy + 132, labelW, 30, 99, exportImg.label === '吃鱼照片' ? 'rgba(230,93,149,.92)' : 'rgba(92,51,80,.80)');
+            ctx.fillStyle = '#fff';
+            ctx.font = '800 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(exportImg.label, x + 44, cy + 153);
+          }
+          ctx.fillStyle = '#5c3350';
+          ctx.font = '900 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+          drawWrappedText(ctx, f.name || '未命名鱼类', x + 24, cy + 204, cardW - 48, 32, 2);
+          ctx.fillStyle = '#9a6c86';
+          ctx.font = '600 19px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+          drawWrappedText(ctx, f.en || f.sci || '', x + 24, cy + 252, cardW - 48, 24, 1);
+          fillRoundRect(ctx, x + 24, cy + cardH - 38, 116, 24, 99, 'rgba(239,116,171,.10)');
+          ctx.fillStyle = '#9d4f78';
+          ctx.font = '700 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+          ctx.fillText((f.habitat || '未分类').slice(0, 8), x + 38, cy + cardH - 21);
+        }
+      }
+      const blob = await canvasToBlob(canvas);
+      if (!blob) { alert('导出失败，请换个浏览器再试。'); return; }
+      downloadBlob(`鱼类收集完成度-${new Date().toISOString().slice(0,10)}.png`, blob);
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], cell = '', quote = false;
+      for (let i=0; i<text.length; i++) {
+        const c = text[i], n = text[i+1];
+        if (c === '"' && quote && n === '"') { cell += '"'; i++; }
+        else if (c === '"') quote = !quote;
+        else if (c === ',' && !quote) { row.push(cell); cell = ''; }
+        else if ((c === '\n' || c === '\r') && !quote) {
+          if (c === '\r' && n === '\n') i++;
+          row.push(cell); cell = '';
+          if (row.some(x => x.trim())) rows.push(row);
+          row = [];
+        } else cell += c;
+      }
+      row.push(cell); if (row.some(x => x.trim())) rows.push(row);
+      if (!rows.length) return [];
+      const headers = rows.shift().map(h => h.trim());
+      return rows.map(r => Object.fromEntries(headers.map((h,i)=>[h, (r[i] || '').trim()])));
+    }
+
+    document.addEventListener('click', async e => {
+      const uploadBtn = e.target.closest('[data-upload-photo]');
+      if (uploadBtn) {
+        selectedMealPhotoFishId = uploadBtn.dataset.uploadPhoto;
+        els.mealPhotoFile.click();
+        return;
+      }
+      const removeBtn = e.target.closest('[data-remove-photo]');
+      if (removeBtn) {
+        const id = removeBtn.dataset.removePhoto;
+        if (confirm('确定删除这张吃鱼照片吗？')) {
+          try {
+            delete mealPhotoUrls[id];
+            await removeMealPhoto(id);
+            render();
+          } catch (err) {
+            alert('删除失败，请稍后再试。');
+          }
+        }
+        return;
+      }
+      const hit = e.target.closest('.fish-click');
+      if (hit) toggleFish(hit.dataset.id);
+    });
+    document.addEventListener('keydown', e => {
+      const hit = e.target.closest('.fish-click');
+      if (!hit) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleFish(hit.dataset.id);
+      }
+    });
+    ['input','change'].forEach(evt => {
+      els.search.addEventListener(evt, render);
+      els.habitat.addEventListener(evt, render);
+      els.groupBy.addEventListener(evt, render);
+      els.status.addEventListener(evt, render);
+    });
+
+    els.exportProgress.addEventListener('click', () => {
+      const payload = { app: '鱼类收集完成度', exportedAt: new Date().toISOString(), done: [...done], customFish };
+      download('fish-completion-progress.json', JSON.stringify(payload, null, 2), 'application/json');
+    });
+    els.exportProgressImage.addEventListener('click', async () => {
+      const oldText = els.exportProgressImage.textContent;
+      els.exportProgressImage.textContent = '正在生成图片...';
+      els.exportProgressImage.disabled = true;
+      try {
+        await exportProgressImage();
+      } catch (err) {
+        console.error(err);
+        alert('进度图片生成失败，可能是照片过多或浏览器内存不足。');
+      } finally {
+        els.exportProgressImage.textContent = oldText;
+        els.exportProgressImage.disabled = false;
+      }
+    });
+    els.importProgressBtn.addEventListener('click', () => els.importProgress.click());
+    els.importProgress.addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (Array.isArray(data.done)) done = new Set(data.done);
+        if (Array.isArray(data.customFish)) customFish = data.customFish;
+        saveDone(); saveCustom(); initFilters(); render();
+      } catch(err) { alert('导入失败：不是有效的进度 JSON。'); }
+      e.target.value = '';
+    });
+    els.importCsvBtn.addEventListener('click', () => els.csvFile.click());
+    els.csvFile.addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      const rows = parseCSV(await file.text());
+      const added = rows.filter(r => r.name).map(r => ({
+        id: cleanId(r.sci || r.name), name: r.name, en: r.en || '', sci: r.sci || '', habitat: r.habitat || '未分类', order: r.order || '未定目', family: r.family || '未定科', note: r.note || ''
+      }));
+      customFish = [...customFish, ...added];
+      saveCustom(); initFilters(); render();
+      alert(`已导入 ${added.length} 条鱼类。`);
+      e.target.value = '';
+    });
+    els.downloadCsv.addEventListener('click', () => download('fish-data-template.csv', CSV_TEMPLATE, 'text/csv;charset=utf-8'));
+    els.mealPhotoFile.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      const id = selectedMealPhotoFishId;
+      e.target.value = '';
+      selectedMealPhotoFishId = '';
+      if (!file || !id) return;
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件。');
+        return;
+      }
+      if (!('indexedDB' in window)) {
+        alert('当前浏览器不支持本地照片保存。');
+        return;
+      }
+      try {
+        const dataUrl = await compressPhoto(file);
+        mealPhotoUrls[id] = dataUrl;
+        done.add(id);
+        saveDone();
+        await setMealPhoto(id, dataUrl);
+        render();
+      } catch (err) {
+        alert('照片保存失败，可能是图片太大或浏览器空间不足。');
+      }
+    });
+    els.resetProgress.addEventListener('click', () => {
+      if (confirm('确定清空“已吃过”进度吗？自定义鱼类不会删除。')) { done = new Set(); saveDone(); render(); }
+    });
+    els.addFish.addEventListener('click', () => {
+      const get = id => document.getElementById(id).value.trim();
+      const item = {
+        id: cleanId(get('newSci') || get('newName')),
+        name: get('newName'), en: get('newEn'), sci: get('newSci'), habitat: get('newHabitat') || '未分类', order: get('newOrder') || '未定目', family: get('newFamily') || '未定科', note: get('newNote')
+      };
+      if (!item.name) { alert('至少要写中文名。'); return; }
+      customFish.push(item); saveCustom();
+      ['newName','newEn','newSci','newHabitat','newOrder','newFamily','newNote'].forEach(id => document.getElementById(id).value = '');
+      initFilters(); render();
+    });
+
+    initFilters();
+    render();
+    loadMealPhotos();
+  </script>
+</body>
+</html>
